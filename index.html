@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="UTF-8">
+    <title>ŞİRKETLER ATLASI: EKONOMİK DÖNÜM NOKTALARI</title>
+    
+
+  </head>
+    
+  <body>
+  <!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Tarihin Dönüm Noktaları: Şirketler Atlası</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        :root { 
+            --corp-blue: #00234e;      
+            --business-gold: #b8860b;  
+            --paper-light: #f4f1ea;    
+            --steel-gray: #2f4f4f;
+        }
+        
+        body { margin: 0; display: flex; height: 100vh; font-family: 'Georgia', serif; background: var(--paper-light); }
+        #map { flex: 1; height: 100%; }
+        
+        #info-panel { 
+            width: 450px; padding: 0; background: white; display: flex; 
+            flex-direction: column; box-shadow: -5px 0 15px rgba(0,0,0,0.3); z-index: 1000;
+        }
+        
+        .header { background: var(--steel-gray); color: var(--business-gold); padding: 20px; text-align: center; border-bottom: 3px solid var(--corp-blue); }
+        .header h1 { margin: 0; font-size: 18px; letter-spacing: 1px; text-transform: uppercase; }
+        
+        .search-area { padding: 15px; border-bottom: 1px solid #ddd; background: #eee; }
+        select { width: 100%; padding: 12px; border-radius: 4px; border: 2px solid var(--steel-gray); font-size: 14px; background: white; }
+
+        #wiki-content { padding: 20px; overflow-y: auto; flex: 1; }
+        
+        /* Başlık ve Ses Butonu Düzeni */
+        .title-container { 
+            display: flex; align-items: center; justify-content: space-between; 
+            border-bottom: 2px solid var(--business-gold); padding-bottom: 10px; margin-bottom: 15px;
+        }
+        #wiki-title { margin: 0; color: var(--corp-blue); font-size: 22px; flex: 1; }
+        
+        /* Ses Butonu Stili */
+        .speak-btn {
+            background: none; border: none; cursor: pointer; font-size: 24px;
+            color: var(--corp-blue); transition: transform 0.2s; padding: 0 10px;
+            display: none; /* Bilgi yüklenince açılacak */
+        }
+        .speak-btn.playing { color: #d32f2f; transform: scale(1.2); }
+
+        .impact-box {
+            background: #fffdf2; border-left: 5px solid var(--business-gold);
+            padding: 12px; margin-bottom: 15px; font-style: italic; font-size: 14px; color: #555;
+        }
+
+        #wiki-img { width: 100%; border-radius: 4px; display: none; margin-bottom: 15px; border: 2px solid var(--corp-blue); }
+        #wiki-text { line-height: 1.7; color: #333; font-size: 15px; text-align: justify; }
+        .source-link { display: inline-block; margin-top: 15px; padding: 8px 15px; background: var(--corp-blue); color: white; text-decoration: none; border-radius: 4px; font-size: 13px; }
+
+        .custom-marker { background-color: var(--corp-blue); border: 2px solid white; border-radius: 50%; }
+        .selected-marker { background-color: var(--business-gold) !important; border: 2px solid var(--corp-blue); transform: scale(1.3); z-index: 1000 !important; }
+        
+        /* Tooltip (Fare ile üzerine gelince çıkan yazı) stili */
+        .leaflet-tooltip {
+            font-family: 'Georgia', serif;
+            font-weight: bold;
+            color: var(--corp-blue);
+            border: 1px solid var(--business-gold);
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body>
+
+<div id="map"></div>
+<div id="info-panel">
+    <div class="header"><h1>ŞİRKETLER ATLASI: EKONOMİK DÖNÜM NOKTALARI</h1></div>
+    <div class="search-area"><select id="corpSelect"><option value="">Bir Şirket Seçin</option></select></div>
+    <div id="wiki-content">
+        <div class="title-container">
+            <h2 id="wiki-title">Keşfetmeye Başlayın</h2>
+            <button id="speakBtn" class="speak-btn" title="Dinle / Durdur">🔊</button>
+        </div>
+        <div id="impact-container"></div>
+        <img id="wiki-img" src="">
+        <div id="wiki-text">Haritadan bir noktaya tıklayın.</div>
+        <a id="wiki-link" href="#" target="_blank" class="source-link" style="display:none;">Wikipedia</a>
+    </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    // Şirket verileri (Örnek Kısa Liste)
+    const companies = [
+    { 
+        year: 578, 
+        name: "Kongō Gumi", 
+        lat: 34.65, lng: 135.51, 
+        wiki: "Kongō_Gumi", 
+        impact: "Dünyanın bilinen en eski aile şirketi. Yüzyıllar boyunca ayakta kalarak kurumsal sürdürülebilirliğin ve uzmanlaşmış zanaatkarlığın küresel sembolü oldu." 
+    },
+    { 
+        year: 1397, 
+        name: "Medici Bankası", 
+        lat: 43.76, lng: 11.25, 
+        wiki: "Medici_Bankası", 
+        impact: "Modern bankacılığın ve çift defter tutma sisteminin öncüsü. Finansal gücüyle Rönesans'ın sanatsal ve bilimsel gelişimine kaynak sağladı." 
+    },
+    { 
+        year: 1487, 
+        name: "Fugger Ailesi", 
+        lat: 48.36, lng: 10.89, 
+        wiki: "Fugger", 
+        impact: "Rönesans Avrupa'sının en güçlü finansörlerinden biri. Habsburg hanedanını destekleyerek Avrupa siyasetini ve erken dönem kapitalizmin temellerini şekillendirdi." 
+    },
+    { 
+        year: 1600, 
+        name: "İngiliz Doğu Hindistan Şirketi", 
+        lat: 51.50, lng: -0.12, 
+        wiki: "Britanya_Doğu_Hindistan_Şirketi", 
+        impact: "Kendi ordusu ve darphanesi olan ilk büyük kurumsal yapı. Hindistan'ın sömürgeleştirilmesinde ve küresel ticaret imparatorluğunun kurulmasında merkezi rol oynadı." 
+    },
+    { 
+        year: 1602, 
+        name: "Hollanda Doğu Hindistan Şirketi (VOC)", 
+        lat: 52.37, lng: 4.89, 
+        wiki: "Hollanda_Doğu_Hindistan_Şirketi", 
+        impact: "Hisse senedi çıkararak halka arz edilen ilk şirket. Modern kapitalizmin, borsanın ve kurumsal yönetim yapısının temelini attı." 
+    },
+      { 
+            year: 1621, 
+            name: "Hollanda Batı Hindistan Şirketi (WIC)", 
+            lat: 52.36, lng: 4.88, 
+            wiki: "Hollanda_Batı_Hindistan_Şirketi", 
+            impact: "Amerika ve Afrika arasındaki köle ticaretini ve şeker kamışı plantasyonlarını yöneten, Atlantik ticaret üçgeninin en karanlık kurumsal aktörü." 
+        },
+      { 
+            year: 1670, 
+            name: "Hudson's Bay Company", 
+            lat: 49.89, lng: -97.13, 
+            wiki: "Hudson's_Bay_Company", 
+            impact: "Kanada'nın neredeyse tamamını bir 'şirket arazisi' olarak yönetti. Kürk ticareti üzerinden bir ülkenin sınırlarını ve kaderini çizen dünyanın en eski şirketlerinden biri." 
+        },
+      { 
+            year: 1672, 
+            name: "Kraliyet Afrika Şirketi (RAC)", 
+            lat: 51.51, lng: -0.09, 
+            wiki: "Royal_African_Company", 
+            impact: "İngiltere'nin köle ticaretindeki tekeli. Amerika kıtasına taşınan milyonlarca insanın lojistiğini yürüten, sömürgeciliğin insanlık dışı finansal motoru." 
+        },
+    { 
+        year: 1688, 
+        name: "Lloyd's of London", 
+        lat: 51.51, lng: -0.08, 
+        wiki: "Lloyd's_of_London", 
+        impact: "Modern sigortacılık ve risk yönetiminin merkezi. Deniz aşırı ticaretin risklerini paylaştırarak küresel ticaret hacminin genişlemesine olanak tanıdı." 
+    },
+    { 
+        year: 1811, 
+        name: "Krupp (ThyssenKrupp)", 
+        lat: 51.45, lng: 7.01, 
+        wiki: "Krupp", 
+        impact: "Modern topçuluk ve ağır sanayinin öncüsü. Geliştirdiği çelik döküm teknolojisiyle Avrupa askeri gücünün endüstriyel temelini oluşturdu." 
+    },
+        {
+    year: 1847,
+    name: "Siemens",
+    lat: 51.05,
+    lng: 13.74,
+    wiki: "Siemens",
+    impact: "Almanya merkezli endüstri ve teknoloji devi. Elektrik mühendisliği ve otomasyon alanlarında küresel lider olarak modern sanayinin gelişimine öncülük etti."
+  },
+    { 
+        year: 1848, 
+        name: "Reuters", 
+        lat: 51.51, lng: -0.10, 
+        wiki: "Reuters", 
+        impact: "Haberin ticari bir meta haline gelişi. Telgraf ağını kullanarak finansal verileri hızla iletti ve küresel piyasaların anlık entegrasyonunu başlattı." 
+    },
+    { 
+        year: 1849, 
+        name: "Pfizer", 
+        lat: 40.74, lng: -73.97, 
+        wiki: "Pfizer", 
+        impact: "Penisilinin seri üretimindeki başarısıyla modern tıp tarihinde dönüm noktası oldu. Enfeksiyon hastalıklarıyla mücadelede küresel ölçekte rol oynadı." 
+    },
+    { 
+        year: 1851, 
+        name: "Western Union", 
+        lat: 39.57, lng: -104.87, 
+        wiki: "Western_Union", 
+        impact: "Kıtalararası telgraf ağını kurarak bilgi ve para transferini hızlandırdı. Modern finansal transfer sistemlerinin öncülüğünü yaptı." 
+    },
+      { 
+    year: 1853, 
+    name: "Levi Strauss & Co.", 
+    lat: 37.77, lng: -122.41, 
+    wiki: "Levi_Strauss_&_Co.", 
+    impact: "Modern giyim tarihinin en büyük kırılımı: Blue Jean. İşçi kıyafeti olarak doğan bu ürün, sınıf farklarını ortadan kaldıran ve tüm dünyanın giydiği tek 'üniforma' haline gelen bir tekstil devrimi başlattı." 
+},
+    { 
+        year: 1860, 
+        name: "S&P Global", 
+        lat: 40.70, lng: -74.00, 
+        wiki: "Standard & Poor's", 
+        impact: "Kredi derecelendirme sistemini kurarak finansal piyasalara veri temelli standartlar getirdi. Yatırım kararlarının kurumsallaşmasını sağladı." 
+    },
+    { 
+        year: 1866, 
+        name: "Nestlé", 
+        lat: 46.46, lng: 6.84, 
+        wiki: "Nestlé", 
+        impact: "Gıda işleme teknolojilerindeki inovasyonlarla modern paketli gıda sanayisini kurdu. Küresel beslenme alışkanlıklarını dönüştürdü." 
+    },
+    { 
+        year: 1870, 
+        name: "Standard Oil", 
+        lat: 41.49, lng: -81.69, 
+        wiki: "Standard_Oil", 
+        impact: "Petrol endüstrisinin ilk büyük tekeli. Antitröst yasalarının çıkmasına neden olan yapısıyla modern serbest piyasa düzenlemelerini şekillendirdi." 
+    },
+      { 
+    year: 1873, 
+    name: "Rio Tinto", 
+    lat: -33.86, lng: 151.20, 
+    wiki: "Rio Tinto", 
+    impact: "Maden kaynaklarının küresel ölçekte yönetimini ve dağıtımını üstlendi. Endüstriyel üretimin hammadde temelini sağlayan devasa bir ağ kurdu." 
+},
+      { 
+    year: 1884, 
+    name: "Piaggio Aerospace", 
+    lat: 44.06, lng: 8.16, // Villanova d'Albenga, İtalya
+    wiki: "Piaggio_Aerospace", 
+    category: "strategic", 
+    impact: "Havacılıkta 'aykırı mühendisliğin' zirvesi. P.180 Avanti modeliyle pervaneli uçakların hızını jet performansıyla birleştiren, motor ve gövde tasarımında aerodinamik sınırları zorlayan 140 yıllık İtalyan teknoloji mirası. Bugün Türk havacılık ekosistemiyle birleşerek küresel bir teknoloji sinerjisi yaratıyor." 
+},
+      { 
+            year: 1888, 
+            name: "De Beers", 
+            lat: -28.72, lng: 24.74, 
+            wiki: "De_Beers", 
+            impact: "Güney Afrika'da elmas madenlerini tekeline alarak Cecil Rhodes önderliğinde İngiliz emperyalizmini finanse eden ve apartheid düzeninin ekonomik temellerini atan güç." 
+        },
+      { 
+            year: 1889, 
+            name: "British South Africa Company", 
+            lat: -17.82, lng: 31.05, 
+            wiki: "British_South_Africa_Company", 
+            impact: "Rodezya'yı (bugünkü Zimbabve ve Zambiya) fetheden ve doğrudan yöneten şirket. Maden kaynakları için koca bir bölgeyi kurumsal mülkiyete çevirmiştir." 
+        },
+    { 
+        year: 1889, 
+        name: "Nintendo", 
+        lat: 34.97, lng: 135.76, 
+        wiki: "Nintendo", 
+        impact: "Geleneksel oyun kartlarından dijital eğlenceye geçişin öncüsü. Video oyun endüstrisinin küresel bir kültür ve ekonomi haline gelmesini sağladı." 
+    },
+    { 
+        year: 1892, 
+        name: "General Electric", 
+        lat: 42.81, lng: -73.93, 
+        wiki: "General_Electric", 
+        impact: "Elektrifikasyon sürecinin lokomotifi. Elektriği sanayi ve ev kullanımına sunarak İkinci Sanayi Devrimi'nin teknik altyapısını kurdu." 
+    },
+      { 
+            year: 1899, 
+            name: "United Fruit Company (Chiquita)", 
+            lat: 15.50, lng: -88.00, 
+            wiki: "United_Fruit_Company", 
+            impact: "Orta Amerika'daki 'Muz Cumhuriyetleri' kavramının yaratıcısı. Şirket çıkarları için hükümetleri deviren, CIA destekli operasyonlarla sömürgeciliği modern çağda sürdüren yapı." 
+        },
+    { 
+        year: 1901, 
+        name: "U.S. Steel", 
+        lat: 40.44, lng: -79.99, 
+        wiki: "U.S._Steel", 
+        impact: "Dünyanın milyar dolar değerindeki ilk şirketi. Çelik üretimiyle modern kentleşmenin ve endüstriyel yapıların fiziksel inşasını mümkün kıldı." 
+    },
+    { 
+        year: 1906, 
+        name: "Rolls-Royce", 
+        lat: 52.92, lng: -1.47, 
+        wiki: "Rolls-Royce_Holdings", 
+        impact: "Mühendislikte mükemmeliyet standardı. Jet motoru ve havacılık teknolojisiyle hem sivil hem askeri havacılığın gelişiminde kritik rol oynadı." 
+    },
+        {
+    year: 1907,
+    name: "Shell",
+    lat: 51.51,
+    lng: -0.13,
+    wiki: "Royal_Dutch_Shell",
+    impact: "Dünyanın önde gelen enerji şirketlerinden biri. Petrol ve doğal gaz üretiminde küresel ölçekte önemli bir aktör."
+  },
+    
+      { 
+            year: 1908, 
+            name: "Anglo-Persian Oil (BP)", 
+            lat: 32.72, lng: 48.33, 
+            wiki: "BP", 
+            impact: "İran petrollerini kontrol etmek için kurulan ve 1953 darbesine kadar bölge siyasetini yöneten petrol devlerinin ilk örneği." 
+        },
+        {
+    year: 1908,
+    name: "General Motors",
+    lat: 42.33,
+    lng: -83.04,
+    wiki: "General_Motors",
+    impact: "ABD merkezli otomotiv devi. Seri üretim teknikleri ve küresel otomobil pazarındaki liderliği ile modern otomotiv endüstrisini dönüştürdü."
+  },
+      
+    { 
+        year: 1911, 
+        name: "IBM", 
+        lat: 41.12, lng: -73.71, 
+        wiki: "IBM", 
+        impact: "Veri işleme ve modern bilişimin kurucusu. Apollo görevlerinden ilk ticari bilgisayarlara kadar dijitalleşmenin yönetimsel temelini attı." 
+    },
+      { 
+        year: 1912, 
+        name: "Paramount Pictures", 
+        lat: 34.08, lng: -118.31, 
+        wiki: "Paramount_Pictures", 
+        impact: "Hollywood stüdyo sisteminin mimarı. Sinemayı bir sanattan öte, küresel ölçekte işleyen bir endüstri ve 'yıldız sistemi' (star system) haline getirdi." 
+    },
+    { 
+        year: 1913, 
+        name: "Ford Motor Company", 
+        lat: 42.33, lng: -83.04, 
+        wiki: "Ford_Motor_Company", 
+        impact: "Hareketli montaj hattı ile seri üretim devrimi. Otomobili ulaşılabilir kılarak modern tüketim toplumunun ve lojistik yapının temelini attı." 
+    },
+    { 
+        year: 1916, 
+        name: "Boeing", 
+        lat: 47.60, lng: -122.33, 
+        wiki: "Boeing", 
+        impact: "Ticari ve askeri havacılığı kitleselleştirdi. Jet Çağı'nı başlatarak küresel ulaşım, lojistik ve turizm sektörlerini kökten dönüştürdü." 
+    },
+    { 
+        year: 1919, 
+        name: "KLM", 
+        lat: 52.31, lng: 4.76, 
+        wiki: "KLM", 
+        impact: "Dünyanın hala faaliyette olan en eski havayolu. Havacılığın standartlaşmış bir ulaşım biçimi olarak kurumsallaşmasını sağladı." 
+    },
+    { 
+        year: 1922, 
+        name: "Raytheon (RTX)", 
+        lat: 42.40, lng: -71.24, 
+        wiki: "RTX Corporation", 
+        impact: "Güdümlü füze ve radar teknolojilerinin öncüsü. Modern savunma sanayisinde hassas vuruş ve elektronik harp teknolojilerinin gelişimini yönetti." 
+    },
+      { 
+        year: 1923, 
+        name: "Warner Bros.", 
+        lat: 34.14, lng: -118.33, 
+        wiki: "Warner_Bros.", 
+        impact: "Sesli film devrimini (The Jazz Singer) başlatarak sessiz sinema çağını kapattı. Sinemanın anlatı dilini ve teknik altyapısını kökten değiştirdi." 
+    },
+      { 
+        year: 1923, 
+        name: "The Walt Disney Company", 
+        lat: 34.15, lng: -118.32, 
+        wiki: "The_Walt_Disney_Company", 
+        impact: "Animasyonun ötesinde, 'merchandising' (lisanslı ürün) ve tema parkları ile eğlenceyi devasa bir ekosisteme dönüştüren ilk şirket oldu." 
+    },
+   
+    { 
+        year: 1925, 
+        name: "AT&T (Bell Labs)", 
+        lat: 40.68, lng: -74.40, 
+        wiki: "Bell_Laboratuvarları", 
+        impact: "Transistör, lazer ve UNIX gibi buluşlarla modern elektroniğin temelini attı. 20. yüzyılın en büyük teknolojik sıçramalarının bilimsel merkezi oldu." 
+    },
+      { 
+    year: 1926, 
+    name: "Godiva Chocolatier", 
+    lat: 50.85, lng: 4.35, // Brüksel, Belçika
+    wiki: "Godiva", 
+    category: "strategic", 
+    impact: "Çikolatayı bir 'lüks tüketim sanatı' haline getiren Belçika ekolü. Draps ailesi tarafından Brüksel'de kurulan marka, el yapımı pralinleri ve ikonik altın kutularıyla (Gold Ballottin) küresel hediye kültürünü ve premium gıda pazarlamasını kökten değiştirdi." 
+},
+    { 
+        year: 1926, 
+        name: "Koç Holding", 
+        lat: 41.04, lng: 29.04, 
+        wiki: "Koç_Holding", 
+        impact: "Türkiye'nin sanayileşme sürecindeki ana aktörlerden biri. Yerli üretim ve ihracat odaklı yapısıyla bölgesel ekonominin gelişiminde önemli rol üstlendi." 
+    },
+    { 
+        year: 1933, 
+        name: "Saudi Aramco", 
+        lat: 26.32, lng: 50.12, 
+        wiki: "Saudi_Aramco", 
+        impact: "Dünyanın en büyük petrol rezervlerinin yöneticisi. Küresel enerji arz güvenliğinin ve enerji ekonomisinin merkezi aktörü haline geldi." 
+    },
+      { 
+    year: 1933, 
+    name: "Türk Hava Yolları", 
+    lat: 40.98, lng: 28.81, 
+    wiki: "Türk_Hava_Yolları", 
+    impact: "İstanbul'u dünyanın en büyük 'transfer merkezi' (hub) haline getirerek küresel havacılık jeopolitiğini değiştirdi. Bugün dünyada en çok ülkeye uçan havayolu olarak ticaretin rotasını Türkiye'ye bağladı." 
+},
+      {
+    year: 1937,
+    name: "Volkswagen",
+    lat: 52.42,
+    lng: 10.79,
+    wiki: "Volkswagen",
+    impact: "Almanya merkezli otomotiv üreticisi. Kitle üretim ve inovasyonla Avrupa'nın en büyük otomobil üreticilerinden biri oldu."
+  },
+      {
+    year: 1938,
+    name: "Samsung",
+    lat: 37.56,
+    lng: 126.97,
+    wiki: "Samsung",
+    impact: "Güney Kore merkezli teknoloji devi. Elektronik, yarı iletken ve telekomünikasyon alanlarında dünya liderlerinden biri."
+  },
+    { 
+        year: 1939, 
+        name: "Northrop Grumman", 
+        lat: 38.92, lng: -77.23, 
+        wiki: "Northrop_Grumman", 
+        impact: "Gizlilik (Stealth) teknolojisi ve stratejik savunma sistemlerinin lideri. Hava ve uzay savunmasında küresel askeri dengeleri şekillendirdi." 
+    },
+    { 
+        year: 1939, 
+        name: "Sukhoi", 
+        lat: 55.78, lng: 37.53, 
+        wiki: "Suhoy", 
+        impact: "Sovyet ve Rus havacılık mühendisliğinin sembolü. Geliştirdiği savaş uçaklarıyla Doğu ve Batı arasındaki askeri denge unsurlarından biri oldu." 
+    },
+      { 
+    year: 1943, 
+    name: "IKEA", 
+    lat: 56.51, lng: 14.13, 
+    wiki: "IKEA", 
+    impact: "'Demokratik Tasarım' kavramıyla mobilyayı lüks olmaktan çıkardı. Yassı paketleme ve kendi-monte-et sistemiyle lojistik maliyetleri sıfırlayarak küresel perakende ve iç mimari kültürünü kalıcı olarak değiştirdi." 
+},
+       {
+    year: 1946,
+    name: "Sony",
+    lat: 35.68,
+    lng: 139.77,
+    wiki: "Sony",
+    impact: "Japon elektronik devi. Tüketici elektroniği, eğlence ve oyun sektörlerinde yenilikçi ürünlerle küresel pazarı şekillendirdi."
+  },
+    { 
+        year: 1947, 
+        name: "Kalaşnikof Grubu", 
+        lat: 56.85, lng: 53.20, 
+        wiki: "Kalaşnikov (şirket)", 
+        impact: "Dünyanın en yaygın kullanılan piyade tüfeği olan AK-47'nin üreticisi. Modern çatışmaların ve askeri doktrinlerin teknik yapısını etkiledi." 
+    },
+    { 
+        year: 1948, 
+        name: "Toyota", 
+        lat: 35.08, lng: 137.15, 
+        wiki: "Toyota", 
+        impact: "Yalın Üretim (Lean) ve Kaizen felsefesiyle sanayi üretimini dönüştürdü. Verimlilik ve kalite yönetiminde küresel standartları belirledi." 
+    },
+    { 
+        year: 1955, 
+        name: "McDonald's", 
+        lat: 41.88, lng: -87.81, 
+        wiki: "McDonald's", 
+        impact: "Hizmet sektöründe seri üretim devrimi. Küresel franchise modeli ve standartlaştırılmış gıda üretimiyle modern hızlı tüketim kültürünü yaydı." 
+    },
+    { 
+        year: 1956, 
+        name: "Unimation", 
+        lat: 41.20, lng: -73.18, 
+        wiki: "Unimation", 
+        impact: "Dünyanın ilk endüstriyel robotunun üreticisi. Fabrika otomasyonunu başlatarak üretim hatlarında insan emeğinin rolünü kalıcı olarak değiştirdi." 
+    },
+    { 
+        year: 1956, 
+        name: "Maersk", 
+        lat: 55.67, lng: 12.59, 
+        wiki: "Maersk", 
+        impact: "Konteyner taşımacılığında standartizasyonun öncüsü. Nakliye maliyetlerini düşürerek modern küreselleşmenin ve tedarik zinciri yapısının önünü açtı." 
+    },
+    { 
+        year: 1958, 
+        name: "Visa (BankAmericard)", 
+        lat: 37.77, lng: -122.41, 
+        wiki: "Visa_Inc.", 
+        impact: "Kredi kartı sistemini küreselleştirerek tüketici kredisini demokratikleştirdi. Paranın dijitalleşme sürecindeki en büyük adımlardan birini attı." 
+    },
+    { 
+        year: 1960, 
+        name: "OPEC", 
+        lat: 48.20, lng: 16.37, 
+        wiki: "OPEC", 
+        impact: "Üye devletlerin üretim politikalarını koordine ederek enerji piyasasını kontrol eden yapı. Küresel enerji jeopolitiğinin en önemli denge unsuru." 
+    },
+    { 
+        year: 1962, 
+        name: "Walmart", 
+        lat: 36.37, lng: -94.20, 
+        wiki: "Walmart", 
+        impact: "Perakendecilikte devasa ölçek ve teknolojik tedarik zinciri yönetimiyle fiyatlandırma ve tüketim alışkanlıklarını yeniden tanımladı." 
+    },
+      { 
+    year: 1966, 
+    name: "Mastercard", 
+    lat: 41.10, lng: -73.69, 
+    wiki: "Mastercard", 
+    impact: "Sınır ötesi ödeme ağlarını kurarak paranın dijitalleşmesini sağladı. Nakitsiz toplum modelinin küresel ölçekte yayılmasında öncü oldu." 
+},
+      { 
+    year: 1970, 
+    name: "Airbus", 
+    lat: 43.60, lng: 1.44, 
+    wiki: "Airbus", 
+    impact: "Avrupa'nın havacılıkta ABD (Boeing) tekeline karşı birleşerek kurduğu dev. Çok uluslu ortaklık modelinin en başarılı örneği olarak küresel gökyüzü rekabetini yeniden şekillendirdi." 
+},
+    { 
+        year: 1971, 
+        name: "Intel", 
+        lat: 37.38, lng: -121.96, 
+        wiki: "Intel", 
+        impact: "Mikroişlemciyi icat ederek kişisel bilgisayar devriminin motorunu yarattı. Dijital cihazların gelişimini belirleyen işlemci mimarilerini kurdu." 
+    },
+      { 
+    year: 1971, 
+    name: "FedEx", 
+    lat: 35.14, lng: -90.04, 
+    wiki: "FedEx", 
+    impact: "Hızlı lojistik ve ekspres taşımacılık modelini icat etti. Ticaretin hızını fiziksel mesafelerden bağımsız hale getirerek modern tedarik zincirini kurdu." 
+},
+      { 
+    year: 1971, 
+    name: "Starbucks", 
+    lat: 47.60, lng: -122.33, 
+    wiki: "Starbucks", 
+    impact: "Kahveyi bir emtiadan 'deneyim' odaklı bir yaşam tarzına dönüştürdü. 'Üçüncü Mekan' (Ev ve iş dışındaki alan) kavramını yaratarak modern şehirli insanın sosyalleşme biçimini ve küresel içecek ekonomisini yeniden tanımladı." 
+},
+    { 
+        year: 1972, 
+        name: "SAP", 
+        lat: 49.29, lng: 8.64, 
+        wiki: "SAP", 
+        impact: "Kurumsal Kaynak Planlaması (ERP) yazılımlarıyla büyük ölçekli şirketlerin yönetimini dijitalleştirdi. Küresel iş süreçlerinde standartizasyon sağladı." 
+    },
+      { 
+    year: 1973, 
+    name: "SWIFT", 
+    lat: 50.81, lng: 4.45, 
+    wiki: "SWIFT", 
+    impact: "Küresel bankacılık iletişiminin standart altyapısı. Finansal dünyayı ortak bir dille birbirine bağlayarak uluslararası sermaye transferlerini mümkün kıldı." 
+},
+      { 
+        year: 1975, 
+        name: "Industrial Light & Magic (Lucasfilm)", 
+        lat: 37.80, lng: -122.44, 
+        wiki: "Lucasfilm", 
+        impact: "Görsel efekt (VFX) teknolojisinin kurucusu. Star Wars ile başlayan süreçte, modern sinemanın dijital ve hayal gücü sınırlarını teknik olarak inşa etti." 
+    },
+    { 
+        year: 1975, 
+        name: "Microsoft", 
+        lat: 47.67, lng: -122.12, 
+        wiki: "Microsoft", 
+        impact: "Kişisel bilgisayarı her ev ve ofise sokan işletim sistemi devrimi. Yazılım ekonomisinin kurumsal ve bireysel dünyadaki hakimiyetini sağladı." 
+    },
+    { 
+        year: 1975, 
+        name: "Vanguard Group", 
+        lat: 40.07, lng: -75.48, 
+        wiki: "The_Vanguard_Group", 
+        impact: "Endeks fonu kavramıyla bireysel yatırımı demokratikleştirdi. Finans dünyasında aktif yönetimden düşük maliyetli pasif yönetime geçişi başlattı." 
+    },
+      { 
+    year: 1975, 
+    name: "ASELSAN", 
+    lat: 39.92, lng: 32.85, 
+    wiki: "ASELSAN", 
+    impact: "Kıbrıs Barış Harekâtı sonrası uygulanan ambargolara karşı kuruldu. Türkiye'nin savunma sanayisinde dışa bağımlılığını kıran ve yerli yüksek teknoloji üretim ekosistemini başlatan temel güç oldu." 
+},
+
+    { 
+        year: 1981, 
+        name: "Bloomberg L.P.", 
+        lat: 40.76, lng: -73.96, 
+        wiki: "Bloomberg_L.P.", 
+        impact: "Finansal veri terminalleriyle bilgi asimetrisini azaltarak piyasaların şeffaflaşmasını sağladı. Küresel finansın veri merkezi haline geldi." 
+    },
+      { 
+    year: 1984, 
+    name: "Cisco", 
+    lat: 37.41, lng: -121.91, 
+    wiki: "Cisco", 
+    impact: "İnternetin donanım omurgasını inşa etti. Bilginin küresel ağlar üzerinden kesintisiz akışını sağlayan yönlendirme teknolojilerini dünyaya yaydı." 
+},
+      { 
+        year: 1986, 
+        name: "Pixar", 
+        lat: 37.83, lng: -122.29, 
+        wiki: "Pixar", 
+        impact: "Tamamen bilgisayar üretimli (CGI) uzun metrajlı film devrimini başlattı. Animasyonun sanatsal derinliğini dijital teknolojiyle birleştirdi." 
+    },
+    { 
+        year: 1986, 
+        name: "Baykar", 
+        lat: 41.13, lng: 28.58, 
+        wiki: "Baykar", 
+        impact: "İnsansız Hava Aracı (İHA) teknolojisinde yaptığı sıçramayla modern harp doktrinlerini değiştirdi. Asimetrik savaşın seyrini etkileyen savunma çözümleri sundu." 
+    },
+    { 
+        year: 1987, 
+        name: "LVMH", 
+        lat: 48.87, lng: 2.30, 
+        wiki: "LVMH", 
+        impact: "Lüks tüketim markalarını tek çatıda toplayarak modern lüks endüstrisini kurdu. Marka değerinin ekonomik sistemdeki ağırlığını kanıtladı." 
+    },
+    { 
+        year: 1987, 
+        name: "TSMC", 
+        lat: 24.77, lng: 121.00, 
+        wiki: "TSMC", 
+        impact: "Dünyanın en gelişmiş yarı iletken üreticisi. Modern dijital dünyadaki tüm akıllı cihazların ve yapay zeka çiplerinin fiziksel üretim üssü haline geldi." 
+    },
+    { 
+        year: 1989, 
+        name: "Gazprom", 
+        lat: 55.65, lng: 37.55, 
+        wiki: "Gazprom", 
+        impact: "Dünyanın en büyük doğal gaz üreticilerinden biri. Rusya'nın ekonomik gücünün ve Avrupa enerji arz jeopolitiğinin merkezi aktörü." 
+    },
+    { 
+        year: 1990, 
+        name: "ARM Holdings", 
+        lat: 52.18, lng: 0.15, 
+        wiki: "ARM Holding", 
+        impact: "Düşük güç tüketimli işlemci tasarımlarıyla mobil devrimi mümkün kıldı. Bugün hemen hemen tüm akıllı telefonların işlemci mimarisini belirlemektedir." 
+    },
+      { 
+    year: 1993, 
+    name: "NVIDIA", 
+    lat: 37.37, lng: -121.95, 
+    wiki: "Nvidia", 
+    category: "industrial",
+    impact: "Yapay zeka devriminin motoru. Ürettiği grafik işlemcilerle (GPU) modern dünyadaki tüm yapay zeka hesaplamalarının ve dijital dönüşümün fiziksel temelini oluşturan tekel." 
+},
+    { 
+        year: 1994, 
+        name: "Amazon", 
+        lat: 47.60, lng: -122.33, 
+        wiki: "Amazon_(şirket)", 
+        impact: "E-ticaret ve bulut bilişim (AWS) ile ticaretin ve teknolojinin yapısını değiştirdi. Fiziksel mağazacılıktan dijital lojistiğe geçişi yönetti." 
+    },
+    { 
+        year: 1995, 
+        name: "Lockheed Martin", 
+        lat: 39.02, lng: -77.12, 
+        wiki: "Lockheed_Martin", 
+        impact: "Havacılık ve uzay savunmasında küresel teknoloji lideri. F-35 ve benzeri platformlarla modern hava üstünlüğü standartlarını tanımladı." 
+    },
+    { 
+        year: 1997, 
+        name: "Netflix", 
+        lat: 37.25, lng: -121.96, 
+        wiki: "Netflix", 
+        impact: "İsteğe bağlı yayıncılık (streaming) ile geleneksel medya ve sinema endüstrisini dönüştürdü. İçerik tüketimini bireyselleştirerek TV çağını kapattı." 
+    },
+      
+       {
+    year: 1998,
+    name: "Tencent",
+    lat: 22.54,
+    lng: 114.06,
+    wiki: "Tencent",
+    impact: "Çin merkezli teknoloji ve internet devi. Sosyal medya, oyun ve finansal teknolojilerde küresel ölçekte etkili bir oyuncu."
+  },
+    { 
+        year: 1998, 
+        name: "Google", 
+        lat: 37.42, lng: -122.08, 
+        wiki: "Google", 
+        impact: "Bilgiyi organize ederek küresel ölçekte erişilebilir kıldı. Veri odaklı reklam modeliyle internet ekonomisinin ana yapısını inşa etti." 
+    },
+      { 
+    year: 1998, 
+    name: "Hepsiburada", 
+    lat: 41.02, lng: 29.11, 
+    wiki: "Hepsiburada.com", 
+    impact: "Türkiye'nin çok kategorili ilk dev e-ticaret platformu. Kendi lojistik (Hepsijet) ve ödeme (Hepsipay) sistemlerini kurarak, Türkiye'de dijital perakendeciliğin standartlarını belirledi ve NASDAQ borsasına kote olan ilk Türk şirketi oldu." 
+},
+    { 
+        year: 1998, 
+        name: "PayPal", 
+        lat: 37.29, lng: -121.91, 
+        wiki: "PayPal", 
+        impact: "Dijital cüzdan ve güvenli ödeme sistemleriyle e-ticaretin büyümesini hızlandırdı. Geleneksel bankacılığa dijital bir alternatif sundu." 
+    },
+    { 
+        year: 1999, 
+        name: "Alibaba Group", 
+        lat: 30.27, lng: 120.15, 
+        wiki: "Alibaba_Group", 
+        impact: "Çin merkezli üreticileri dünyaya bağlayarak küresel ticaretin dengelerini değiştirdi. Asya'nın dijital ödeme ve e-ticaret ekosistemini kurdu." 
+    },
+      { 
+    year: 1999, 
+    name: "Yemeksepeti", 
+    lat: 41.09, lng: 29.01, 
+    wiki: "Yemeksepeti", 
+    impact: "Türkiye'de e-ticaretin ve dijital platform ekonomisinin 'sıfır noktası'. Henüz internetin yaygın olmadığı bir dönemde Türk tüketicisinin yeme-içme ve ödeme alışkanlıklarını dijitale taşıyan ilk büyük kırılım." 
+},
+      { 
+    year: 1999, 
+    name: "Salesforce", 
+    lat: 37.79, lng: -122.39, 
+    wiki: "Salesforce", 
+    impact: "Bulut bilişim (SaaS - Hizmet olarak yazılım) modelini icat etti. Şirketlerin yazılım satın almak yerine internet üzerinden 'abone' olmasını sağlayarak modern iş dünyasının çalışma şeklini tamamen değiştirdi." 
+},
+    { 
+        year: 2002, 
+        name: "SpaceX", 
+        lat: 33.92, lng: -118.32, 
+        wiki: "SpaceX", 
+        impact: "Yeniden kullanılabilir roket teknolojisiyle uzaya erişim maliyetini radikal şekilde düşürdü. Uzayın ticarileşmesi sürecini başlattı." 
+    },
+      { 
+    year: 2002, 
+    name: "LinkedIn", 
+    lat: 37.42, lng: -122.07, 
+    wiki: "LinkedIn", 
+    impact: "Profesyonel ağların ve iş gücü piyasasının dijitalleşmesini sağladı. Kurumsal kimlik ve kariyer yönetimini küresel bir veri tabanına dönüştürdü." 
+},
+    { 
+        year: 2003, 
+        name: "Tesla, Inc.", 
+        lat: 30.27, lng: -97.74, 
+        wiki: "Tesla,_Inc.", 
+        impact: "Elektrikli araçları kitleselleştirerek otomotiv endüstrisinde sürdürülebilirlik dönüşümünü başlattı. Batarya ve enerji teknolojilerinde devrim yaptı." 
+    },
+    { 
+        year: 2004, 
+        name: "Facebook (Meta)", 
+        lat: 37.48, lng: -122.14, 
+        wiki: "Facebook", 
+        impact: "Sosyal medya çağını başlatarak iletişimi, reklamcılığı ve toplumsal etkileşimi kökten değiştirdi. Veriyi modern ekonominin temel varlığı haline getirdi." 
+    },
+    { 
+        year: 2005, 
+        name: "YouTube", 
+        lat: 37.62, lng: -122.42, 
+        wiki: "YouTube", 
+        impact: "Görüntülü içeriği demokratikleştirerek kitle iletişiminde yeni bir çağ başlattı. Geleneksel yayıncılığın yerini alan dijital bir içerik ekosistemi kurdu." 
+    },
+        {
+    year: 2006,
+    name: "Spotify",
+    lat: 59.33,
+    lng: 18.07,
+    wiki: "Spotify",
+    impact: "Müzik streaming platformu olarak müzik endüstrisinde devrim yarattı. Dijital müzik tüketim alışkanlıklarını kökten değiştirdi."
+  },
+      {
+    year: 2006,
+    name: "Twitter",
+    lat: 37.78, lng: -122.40,
+    wiki: "Twitter",
+    impact: "Sosyal medya ve anlık haberleşme alanında yeni bir çağ başlattı, küresel iletişimi hızlandırdı."
+},
+       { year: 2007, 
+        name: "Apple (iPhone)", 
+        lat: 37.33, lng: -122.03, 
+        wiki: "Apple", 
+        impact: "Akıllı telefon devrimiyle uygulama ekonomisini ve mobil interneti başlattı. İnsanların teknolojiyle etkileşim kurma biçimini baştan tanımladı." 
+    },
+    { 
+        year: 2008, 
+        name: "Airbnb / Uber", 
+        lat: 37.77, lng: -122.41, 
+        wiki: "Paylaşım_ekonomisi", 
+        impact: "Paylaşım ekonomisi modelini yaygınlaştırarak atıl varlıkların ticarileşmesini sağladı. Konaklama ve ulaşım sektörlerinde yıkıcı dönüşümler yaptı." 
+    },
+    { 
+    year: 2009, 
+    name: "Bitcoin (Blokzincir Devrimi)", 
+    lat: 38.89, lng: -77.03, // Sembolik konum: Washington D.C. (Finansal sistemin merkezi)
+    wiki: "Bitcoin", 
+    impact: "Merkezi olmayan (Decentralized) finansın başlangıcı. Aracı kurumları ve devlet otoritesini devre dışı bırakan Blockchain teknolojisiyle paranın, mülkiyetin ve güvenin tanımını 500 yıl sonra ilk kez değiştirdi." 
+},
+      { 
+    year: 2010, 
+    name: "Peak Games", 
+    lat: 41.03, lng: 28.98, 
+    wiki: "Peak_Games", 
+    impact: "Türkiye'nin ilk 'Unicorn' (1 milyar dolar değerlemeyi aşan) şirketi. İstanbul'u küresel bir mobil oyun geliştirme merkezine dönüştürerek, yüzlerce yeni oyun girişiminin önünü açtı." 
+},
+      { 
+    year: 2010, 
+    name: "Instagram", 
+    lat: 37.48, lng: -122.14, 
+    wiki: "Instagram", 
+    impact: "Görsel odaklı iletişimi ve 'etkileyici ekonomisini' (influencer) başlattı. Modern pazarlama ve dijital estetik anlayışını küresel ölçekte standartlaştırdı." 
+},
+      { 
+    year: 2011, 
+    name: "Trendyol", 
+    lat: 41.03, lng: 28.99, 
+    wiki: "Trendyol", 
+    impact: "Türkiye'nin ilk 'Decacorn'u (10 milyar dolar değerlemeyi aşan). Yerel bir moda sitesinden küresel bir lojistik ve pazaryeri devine dönüşerek, Türkiye'nin dijital ihracat (e-ihracat) kapasitesini yeni bir seviyeye taşıdı." 
+},
+      { 
+    year: 2015, 
+    name: "Getir", 
+    lat: 41.08, lng: 29.01, 
+    wiki: "Getir", 
+    impact: "'Dakikalar içinde market teslimatı' modelini dünyada ilk kez ticari bir başarıya dönüştürdü. Londra, Amsterdam ve New York gibi şehirlerde bu iş modelinin (ultrafast delivery) öncüsü ve ilham kaynağı oldu." 
+},
+      { 
+    year: 2016, 
+    name: "TikTok", 
+    lat: 39.90, lng: 116.40, // Pekin merkezi
+    wiki: "TikTok", 
+    impact: "Yapay zeka odaklı algoritma tabanlı içerik tüketimini yaygınlaştırdı. İlk kez Çin menşeli bir dijital platform, küresel popüler kültür üzerinde baskın bir güç haline geldi." 
+},
+      { 
+    year: 2018, 
+    name: "Togg", 
+    lat: 40.43, lng: 29.15, 
+    wiki: "Togg", 
+    impact: "Türkiye'nin geleneksel otomotiv üretim kapasitesini dijital mobilite ekosistemine dönüştürme girişimi. Klasik bir araçtan ziyade, 'akıllı cihaz' odaklı üretim bandıyla yerli sanayide teknolojik bir kırılım hedefliyor." 
+},
+      { 
+        year: 2018, 
+        name: "Martı", 
+        lat: 41.05, lng: 29.00, 
+        wiki: "Martı_(şirket)", 
+        category: "digital",
+        impact: "Türkiye'nin mikro-mobilite devrimini başlatan girişim. Paylaşımlı ulaşım modelini (scooter, mobilet) Türkiye'nin büyük şehirlerine yayarak şehir içi ulaşım alışkanlıklarını ve yasal mevzuatları dönüştürdü." 
+    },
+      { 
+    year: 2018, 
+    name: "Rollic Games", 
+    lat: 41.04, lng: 29.00, 
+    wiki: "Rollic Games", 
+    impact: "Hyper-casual oyun modelini küresel ölçekte endüstrileşti. Çok kısa sürede milyarlarca indirmeye ulaşarak, İstanbul'un dünyanın mobil oyun üretim üssü haline gelmesinde Peak Games'ten sonraki en büyük kırılımı yarattı." 
+},
+    { 
+        year: 2022, 
+        name: "OpenAI", 
+        lat: 37.76, lng: -122.41, 
+        wiki: "OpenAI", 
+        impact: "Üretken Yapay Zeka devrimini başlattı. Bilgi işçiliği ve yaratıcılık gerektiren alanlarda otomasyon sürecine geçilmesini sağlayarak yeni bir ekonomik çağın kapısını açtı." 
+    },
+    
+    ].sort((a, b) => a.year - b.year);
+
+    const map = L.map('map').setView([20, 0], 2);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
+
+    const select = document.getElementById('corpSelect');
+    const speakBtn = document.getElementById('speakBtn');
+    const markers = [];
+    let currentSpeech = null;
+
+    function createIcon(isSelected) {
+        return L.divIcon({
+            className: isSelected ? 'custom-marker selected-marker' : 'custom-marker',
+            iconSize: isSelected ? [18, 18] : [12, 12]
+        });
+    }
+
+    companies.forEach((corp, index) => {
+        const marker = L.marker([corp.lat, corp.lng], { icon: createIcon(false) }).addTo(map);
+        
+        // --- ADI GÖSTERME ÖZELLİĞİ BURADA ---
+        marker.bindTooltip(`<b>${corp.name}</b> (${corp.year})`, {
+            direction: 'top',
+            offset: [0, -10],
+            opacity: 0.9
+        });
+        // ------------------------------------
+
+        markers.push(marker);
+        marker.on('click', () => { select.value = index; showDetails(index); });
+        const opt = document.createElement('option');
+        opt.value = index;
+        opt.textContent = `${corp.year} | ${corp.name}`;
+        select.appendChild(opt);
+    });
+
+    select.addEventListener('change', (e) => { if(e.target.value !== "") showDetails(e.target.value); });
+
+    function toggleSpeech(text) {
+        if (window.speechSynthesis.speaking) {
+            window.speechSynthesis.cancel();
+            speakBtn.classList.remove('playing');
+            if (currentSpeech === text) {
+                currentSpeech = null;
+                return;
+            }
+        }
+        
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'tr-TR';
+        utterance.onend = () => speakBtn.classList.remove('playing');
+        
+        currentSpeech = text;
+        speakBtn.classList.add('playing');
+        window.speechSynthesis.speak(utterance);
+    }
+
+    function showDetails(index) {
+        const corp = companies[index];
+        window.speechSynthesis.cancel(); 
+        speakBtn.classList.remove('playing');
+        
+        markers.forEach((m, i) => m.setIcon(createIcon(i == index)));
+        map.flyTo([corp.lat, corp.lng], 5);
+        
+        document.getElementById('wiki-title').textContent = corp.name;
+        document.getElementById('impact-container').innerHTML = `<div class="impact-box"><strong>Dönüm Noktası:</strong> ${corp.impact}</div>`;
+        
+        fetch(`https://tr.wikipedia.org/api/rest_v1/page/summary/${corp.wiki}`)
+            .then(res => res.json())
+            .then(data => {
+                const text = data.extract;
+                document.getElementById('wiki-text').textContent = text;
+                const img = document.getElementById('wiki-img');
+                img.src = data.thumbnail ? data.thumbnail.source : '';
+                img.style.display = data.thumbnail ? 'block' : 'none';
+
+                speakBtn.style.display = 'block';
+                const fullText = `Dönüm Noktası: ${corp.impact}. ${text}`;
+
+                speakBtn.onclick = () => toggleSpeech(fullText);
+
+                const link = document.getElementById('wiki-link');
+                link.href = `https://tr.wikipedia.org/wiki/${corp.wiki}`;
+                link.style.display = 'inline-block';
+            });
+    }
+</script>
+</body>
+</html>
+    
+  </body>
+  
+</html>
