@@ -17,7 +17,7 @@
             margin: 0; 
             display: flex; 
             height: 100vh; 
-            flex-direction: row; /* Masaüstü varsayılanı */
+            flex-direction: row; 
             font-family: 'Georgia', serif; 
             background: var(--paper-light); 
         }
@@ -76,28 +76,10 @@
             border: 1px solid var(--business-gold); box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
         }
 
-        /* --- RESPONSIVE TASARIM (MOBİL UYUM) --- */
         @media (max-width: 768px) {
-            body {
-                flex-direction: column; /* Üst üste diz */
-            }
-
-            #map {
-                height: 40vh; /* Harita mobilde ekranın %40'ını kaplasın */
-                width: 100%;
-                flex: none;
-            }
-
-            #info-panel {
-                width: 100%; /* Panel tam genişlik */
-                height: 60vh; /* Kalan %60'ı panel alsın */
-                box-shadow: 0 -5px 15px rgba(0,0,0,0.2);
-            }
-
-            .header { padding: 10px; }
-            .header h1 { font-size: 14px; }
-            #wiki-title { font-size: 18px; }
-            #wiki-content { padding: 15px; }
+            body { flex-direction: column; }
+            #map { height: 40vh; width: 100%; flex: none; }
+            #info-panel { width: 100%; height: 60vh; }
         }
     </style>
 </head>
@@ -122,7 +104,7 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
     const companies = [
-    { 
+        { 
         year: 578, 
         name: "Kongō Gumi", 
         lat: 34.65, lng: 135.51, 
@@ -143,6 +125,27 @@
         wiki: "Fugger", 
         impact: "Rönesans Avrupa'sının en güçlü finansörlerinden biri. Habsburg hanedanını destekleyerek Avrupa siyasetini ve erken dönem kapitalizmin temellerini şekillendirdi." 
     },
+      { 
+    year: 1526, 
+    name: "Beretta", 
+    lat: 45.70, lng: 10.27, // Gardone Val Trompia, İtalya
+    wiki: "Beretta", 
+    impact: "Dünyanın hala faaliyette olan en eski sanayi ve aile şirketi. Rönesans'tan modern çağa kadar metal işleme ve savunma sanayisindeki sürekliliğin, kurumsal dayanıklılığın küresel sembolü." 
+},
+      { 
+    year: 1555, 
+    name: "Muscovy Company", 
+    lat: 55.75, lng: 37.61, // Moskova merkezli ticaret
+    wiki: "Muscovy_Company", 
+    impact: "İngiltere'nin ilk büyük anonim şirketi. Kuzey Doğu Geçidi'ni ararken Rus Çarlığı ile doğrudan ticaret rotası kurmuş, yüzyıllar sürecek İngiliz-Rus diplomatik ve ticari ilişkilerinin temelini atmıştır." 
+},
+     { 
+        year: 1581, 
+        name: "Levant Company ", 
+        lat: 36.20, lng: 37.16, // Halep, Suriye - Şirketin ana ticaret merkezi
+        wiki: "Levant_Company", 
+        impact: "Osmanlı topraklarında ticaret yapmak üzere kurulan ve 200 yıl boyunca İngiltere'nin bölge ticaretini tekeline alan yapı. Halep'i ana ticaret üssü olarak kullanarak ipek ve baharat yollarını kontrol etmiş, modern konsolosluk sisteminin ve İngiliz dış politikasının kurumsallaşmasına öncülük etmiştir." 
+    },
     { 
         year: 1600, 
         name: "İngiliz Doğu Hindistan Şirketi", 
@@ -158,6 +161,13 @@
         impact: "Hisse senedi çıkararak halka arz edilen ilk şirket. Modern kapitalizmin, borsanın ve kurumsal yönetim yapısının temelini attı." 
     },
       { 
+    year: 1616, 
+    name: "Danimarka Doğu Hindistan Şirketi", 
+    lat: 55.67, lng: 12.56, // Kopenhag, Danimarka
+    wiki: "Danish_East_India_Company", 
+    impact: "Danimarka'nın küresel bir sömürge gücü olma girişimi. Hindistan'daki Tranquebar ve Serampore gibi kolonileri yöneterek İskandinavya'ya çay, baharat ve tekstil taşımış, Danimarka ekonomisini küresel pazara entegre etmiştir." 
+},
+      { 
             year: 1621, 
             name: "Hollanda Batı Hindistan Şirketi (WIC)", 
             lat: 52.36, lng: 4.88, 
@@ -165,19 +175,34 @@
             impact: "Amerika ve Afrika arasındaki köle ticaretini ve şeker kamışı plantasyonlarını yöneten, Atlantik ticaret üçgeninin en karanlık kurumsal aktörü." 
         },
       { 
+    year: 1660, 
+    name: "Royal African Company", 
+    lat: 51.51, lng: -0.09,
+    wiki: "Royal_African_Company", 
+    impact: "Atlantik köle ticaretini tekeline alan İngiliz şirketi. Amerika sömürgelerindeki plantasyon ekonomisinin iş gücünü sağlayan bu yapı, modern finansın ve sigortacılık sektörünün köklerindeki trajik sermaye birikimini temsil eder." 
+},
+      { 
+        year: 1664, 
+        name: "Compagnie des Indes Orientales (Fransız Doğu Hindistan Şirketi)", 
+        lat: 47.74, lng: -3.36, // Lorient, Fransa (Şirketin ana limanı ve merkezi)
+        wiki: "Fransız_Doğu_Hindistan_Şirketi", 
+        impact: "Kral XIV. Louis tarafından kurulan ve Fransa'nın sömürge imparatorluğunu Asya'ya taşıyan güç. Hindistan'daki İngiliz etkisine karşı büyük bir direnç oluşturmuş ve egzotik ürünlerin Avrupa mutfağına ve modasına girmesinde kilit rol oynamıştır." 
+    },
+      { 
             year: 1670, 
             name: "Hudson's Bay Company", 
             lat: 49.89, lng: -97.13, 
             wiki: "Hudson's_Bay_Company", 
             impact: "Kanada'nın neredeyse tamamını bir 'şirket arazisi' olarak yönetti. Kürk ticareti üzerinden bir ülkenin sınırlarını ve kaderini çizen dünyanın en eski şirketlerinden biri." 
         },
+     
       { 
-            year: 1672, 
-            name: "Kraliyet Afrika Şirketi (RAC)", 
-            lat: 51.51, lng: -0.09, 
-            wiki: "Royal_African_Company", 
-            impact: "İngiltere'nin köle ticaretindeki tekeli. Amerika kıtasına taşınan milyonlarca insanın lojistiğini yürüten, sömürgeciliğin insanlık dışı finansal motoru." 
-        },
+    year: 1684, 
+    name: "Mississippi Company", 
+    lat: 48.85, lng: 2.35, // Paris merkezli
+    wiki: "Mississippi Company", 
+    impact: "Fransız ekonomisini kağıt para sistemine geçirmek için kullanılan devasa yapı. Tarihin en büyük spekülatif balonlarından birini yaratmış ve patladığında Fransız Devrimi'ne giden ekonomik huzursuzluğun tohumlarını ekmiştir." 
+},
     { 
         year: 1688, 
         name: "Lloyd's of London", 
@@ -185,6 +210,35 @@
         wiki: "Lloyd's_of_London", 
         impact: "Modern sigortacılık ve risk yönetiminin merkezi. Deniz aşırı ticaretin risklerini paylaştırarak küresel ticaret hacminin genişlemesine olanak tanıdı." 
     },
+      { 
+        year: 1695, 
+        name: "Company of Scotland", 
+        lat: 55.95, lng: -3.19, // Edinburgh, İskoçya
+        wiki: "Company_of_Scotland", 
+        impact: "İskoçya'nın küresel bir ticaret gücü olma girişimi. Panama'da kurulan Darien sömürgesinin trajik iflası, İskoçya ekonomisini çökertmiş ve ülkeyi İngiltere ile birleşerek Büyük Britanya'yı kurmaya zorlayan en büyük ekonomik etken olmuştur." 
+    },
+      { 
+    year: 1711, 
+    name: "South Sea Company", 
+    lat: 51.51, lng: -0.09, // Londra
+    wiki: "Güney Denizi Şirketi", 
+    impact: "Dünya tarihinin ilk büyük borsa spekülasyonu ve çöküşü. 'Balon' kavramını finans literatürüne sokan şirket, İngiliz ekonomisini sarsmış ancak modern sermaye piyasası düzenlemelerinin doğmasına neden olmuştur." 
+},
+      { 
+    year: 1731, 
+    name: "İsveç Doğu Hindistan Şirketi", 
+    lat: 57.70, lng: 11.97, // Göteborg, İsveç
+    wiki: "Svenska Ostindiska Companiet", 
+    impact: "İsveç'in küresel ticarete giriş bileti. Çin ile yapılan çay ve porselen ticaretiyle İsveç kültürünü ve mimarisini dönüştüren devasa bir servet birikimi sağlamıştır." 
+},
+ { 
+    year: 1759, 
+    name: "Guinness", 
+    lat: 53.34, lng: -6.28, // Dublin, İrlanda
+    wiki: "Guinness", 
+    impact: "Arthur Guinness, 31 Aralık 1759'da St. James's Gate'deki 4 dönümlük araziyi, yıllık sadece 45 Sterlin sabit kira bedeliyle tam 9.000 yıllık bir kontratla kiralamıştır. Bu kontrat, şirkete o dönemde kimsenin sahip olmadığı bir 'mekansal dokunulmazlık' ve uzun vadeli yatırım güveni sağlamıştır. Şirketin bu aşırı özgüveni, daha sonra dünyanın en büyük bira fabrikasını kurmasına ve sanayi devrimi sırasında işçilerine sağlık sigortası ile yüksek maaş gibi öncü haklar tanımasına zemin hazırlamıştır." 
+},
+   
     { 
         year: 1811, 
         name: "Krupp (ThyssenKrupp)", 
@@ -402,6 +456,13 @@
         wiki: "Bell_Laboratuvarları", 
         impact: "Transistör, lazer ve UNIX gibi buluşlarla modern elektroniğin temelini attı. 20. yüzyılın en büyük teknolojik sıçramalarının bilimsel merkezi oldu." 
     },
+      { 
+    year: 1926, 
+    name: "Imperial Chemical Industries (ICI)", 
+    lat: 53.33, lng: -2.73, // Northwich, İngiltere
+    wiki: "Imperial_Chemical_Industries", 
+    impact: "Plastik, ilaç ve boya sanayisinde devrim yaratan buluşların sahibi. II. Dünya Savaşı sonrası küresel tüketim toplumunun ihtiyaç duyduğu kimyasal altyapıyı kuran dev yapı." 
+},
       { 
     year: 1926, 
     name: "Godiva Chocolatier", 
@@ -838,6 +899,13 @@
     impact: "Türkiye'nin ilk 'Decacorn'u (10 milyar dolar değerlemeyi aşan). Yerel bir moda sitesinden küresel bir lojistik ve pazaryeri devine dönüşerek, Türkiye'nin dijital ihracat (e-ihracat) kapasitesini yeni bir seviyeye taşıdı." 
 },
       { 
+    year: 2012, 
+    name: "Insider (Insider One)", 
+    lat: 41.0924, lng: 29.0033, 
+    wiki: "Insider (Turkish company)", 
+    impact: "2012'de İstanbul'da kurularak Türkiye'nin en başarılı küresel SaaS yolculuğunu başlattı. 2022'de ülkenin ilk yazılım unicorn'u unvanını alarak, yerli derin teknoloji (deep-tech) girişimlerinin dünya devleriyle rekabet edebileceğini kanıtladı ve ekosistemde büyük bir zihniyet değişimi yarattı." 
+},
+      { 
     year: 2015, 
     name: "Getir", 
     lat: 41.08, lng: 29.01, 
@@ -847,7 +915,7 @@
       { 
     year: 2016, 
     name: "TikTok", 
-    lat: 39.90, lng: 116.40, // Pekin merkezi
+    lat: 39.90, lng: 116.40, 
     wiki: "TikTok", 
     impact: "Yapay zeka odaklı algoritma tabanlı içerik tüketimini yaygınlaştırdı. İlk kez Çin menşeli bir dijital platform, küresel popüler kültür üzerinde baskın bir güç haline geldi." 
 },
@@ -899,83 +967,87 @@
 
     companies.forEach((corp, index) => {
         const marker = L.marker([corp.lat, corp.lng], { icon: createIcon(false) }).addTo(map);
-        marker.bindTooltip(`<b>${corp.name}</b> (${corp.year})`, {
-            direction: 'top',
-            offset: [0, -10],
-            opacity: 0.9
-        });
-
+        marker.bindTooltip(`<b>${corp.name}</b> (${corp.year})`, { direction: 'top', offset: [0, -10], opacity: 0.9 });
         markers.push(marker);
-        marker.on('click', () => { 
-            select.value = index; 
-            showDetails(index); 
-        });
+        marker.on('click', () => { select.value = index; showDetails(index); });
         const opt = document.createElement('option');
         opt.value = index;
         opt.textContent = `${corp.year} | ${corp.name}`;
         select.appendChild(opt);
     });
 
-    select.addEventListener('change', (e) => { 
-        if(e.target.value !== "") showDetails(e.target.value); 
-    });
+    select.addEventListener('change', (e) => { if(e.target.value !== "") showDetails(e.target.value); });
 
-    function toggleSpeech(text) {
-        if (window.speechSynthesis.speaking) {
-            window.speechSynthesis.cancel();
-            speakBtn.classList.remove('playing');
-            if (currentSpeech === text) {
-                currentSpeech = null;
-                return;
-            }
-        }
-        
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = 'tr-TR';
-        utterance.onend = () => speakBtn.classList.remove('playing');
-        
-        currentSpeech = text;
-        speakBtn.classList.add('playing');
-        window.speechSynthesis.speak(utterance);
+    async function translateText(text) {
+        try {
+            const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=tr&dt=t&q=${encodeURIComponent(text)}`);
+            const data = await res.json();
+            return data[0].map(item => item[0]).join('');
+        } catch (e) { return text; }
     }
 
-    function showDetails(index) {
+    async function showDetails(index) {
         const corp = companies[index];
-        window.speechSynthesis.cancel(); 
+        window.speechSynthesis.cancel();
         speakBtn.classList.remove('playing');
         
         markers.forEach((m, i) => m.setIcon(createIcon(i == index)));
-        
-        // Mobilde flyTo yaparken zoom seviyesini biraz daha düşük tutmak iyi olabilir
         const zoomLevel = window.innerWidth < 768 ? 4 : 5;
         map.flyTo([corp.lat, corp.lng], zoomLevel);
         
         document.getElementById('wiki-title').textContent = corp.name;
         document.getElementById('impact-container').innerHTML = `<div class="impact-box"><strong>Dönüm Noktası:</strong> ${corp.impact}</div>`;
+        document.getElementById('wiki-text').textContent = "Yükleniyor...";
+
+        let wikiData;
+        let lang = 'tr';
         
-        fetch(`https://tr.wikipedia.org/api/rest_v1/page/summary/${corp.wiki}`)
-            .then(res => res.json())
-            .then(data => {
-                const text = data.extract || "Bilgi bulunamadı.";
-                document.getElementById('wiki-text').textContent = text;
-                const img = document.getElementById('wiki-img');
-                img.src = data.thumbnail ? data.thumbnail.source : '';
-                img.style.display = data.thumbnail ? 'block' : 'none';
+        try {
+            // 1. Önce Türkçe Wikipedia'yı dene
+            let res = await fetch(`https://tr.wikipedia.org/api/rest_v1/page/summary/${corp.wiki}`);
+            if (res.status === 404) throw new Error("TR Not Found");
+            wikiData = await res.json();
+        } catch (e) {
+            // 2. Bulunamazsa İngilizce Wikipedia'yı dene
+            lang = 'en';
+            let res = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${corp.wiki}`);
+            wikiData = await res.json();
+        }
 
-                speakBtn.style.display = 'block';
-                const fullText = `Dönüm Noktası: ${corp.impact}. ${text}`;
+        let finalDescription = wikiData.extract || "Bilgi bulunamadı.";
+        
+        // 3. Eğer İngilizceden geldiyse çeviri yap
+        if (lang === 'en' && finalDescription !== "Bilgi bulunamadı.") {
+            finalDescription = await translateText(finalDescription);
+        }
 
-                speakBtn.onclick = () => toggleSpeech(fullText);
+        document.getElementById('wiki-text').textContent = finalDescription;
+        const img = document.getElementById('wiki-img');
+        img.src = wikiData.thumbnail ? wikiData.thumbnail.source : '';
+        img.style.display = wikiData.thumbnail ? 'block' : 'none';
 
-                const link = document.getElementById('wiki-link');
-                link.href = `https://tr.wikipedia.org/wiki/${corp.wiki}`;
-                link.style.display = 'inline-block';
-                
-                // Mobilde detaylar açıldığında paneli otomatik yukarı kaydır
-                if(window.innerWidth < 768) {
-                    document.getElementById('wiki-content').scrollTop = 0;
-                }
-            });
+        speakBtn.style.display = 'block';
+        const fullText = `Dönüm Noktası: ${corp.impact}. ${finalDescription}`;
+        speakBtn.onclick = () => toggleSpeech(fullText);
+
+        const link = document.getElementById('wiki-link');
+        link.href = `https://${lang}.wikipedia.org/wiki/${corp.wiki}`;
+        link.textContent = lang === 'tr' ? 'Wikipedia (TR)' : 'Wikipedia (EN - Çeviri)';
+        link.style.display = 'inline-block';
+    }
+
+    function toggleSpeech(text) {
+        if (window.speechSynthesis.speaking) {
+            window.speechSynthesis.cancel();
+            speakBtn.classList.remove('playing');
+            if (currentSpeech === text) { currentSpeech = null; return; }
+        }
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'tr-TR';
+        utterance.onend = () => speakBtn.classList.remove('playing');
+        currentSpeech = text;
+        speakBtn.classList.add('playing');
+        window.speechSynthesis.speak(utterance);
     }
 </script>
 </body>
